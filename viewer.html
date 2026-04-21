@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skill Tracker — 步骤流程图</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232638;
+      --border: #2e3250;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --exploring: #f59e0b;
+      --confirmed: #22c55e;
+      --error: #ef4444;
+      --accent: #6366f1;
+      --connector: #374151;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo h1 { font-size: 18px; font-weight: 700; }
+    .logo p  { font-size: 12px; color: var(--text-muted); }
+
+    .controls {
+      display: flex; gap: 10px; align-items: center;
+    }
+    .btn {
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn:hover { background: var(--border); }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: #4f46e5; }
+
+    /* ── Stats Bar ── */
+    .stats {
+      display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .stat {
+      padding: 10px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .stat .num {
+      font-size: 22px; font-weight: 700; line-height: 1.2;
+      display: block;
+    }
+    .stat .label { color: var(--text-muted); }
+    .stat.total   .num { color: var(--text); }
+    .stat.exp     .num { color: var(--exploring); }
+    .stat.conf    .num { color: var(--confirmed); }
+    .stat.err     .num { color: var(--error); }
+
+    /* ── File Path Input ── */
+    .path-row {
+      display: flex; gap: 8px; margin-bottom: 20px; align-items: center;
+    }
+    .path-row label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+    .path-input {
+      flex: 1;
+      padding: 7px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .path-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+    /* ── Empty State ── */
+    .empty {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+    .empty .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty p { max-width: 360px; margin: 0 auto; line-height: 1.6; font-size: 14px; }
+
+    /* ── Flow Container ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── Step Card ── */
+    .step-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .connector {
+      width: 2px;
+      height: 28px;
+      background: var(--connector);
+      position: relative;
+    }
+    .connector::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid var(--connector);
+    }
+
+    .step-card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      position: relative;
+      transition: border-color .2s;
+    }
+    .step-card:hover { border-color: var(--accent); }
+
+    /* Status stripe */
+    .step-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 12px; bottom: 12px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+    }
+    .step-card.exploring::before { background: var(--exploring); }
+    .step-card.confirmed::before { background: var(--confirmed); }
+    .step-card.error::before     { background: var(--error); }
+
+    .step-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .step-desc {
+      font-size: 15px; font-weight: 600; line-height: 1.4;
+    }
+    .step-status {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .status-exploring { background: rgba(245,158,11,.15); color: var(--exploring); border: 1px solid rgba(245,158,11,.3); }
+    .status-confirmed { background: rgba(34,197,94,.15);  color: var(--confirmed); border: 1px solid rgba(34,197,94,.3); }
+    .status-error     { background: rgba(239,68,68,.15);  color: var(--error);     border: 1px solid rgba(239,68,68,.3); }
+
+    .step-meta {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .meta-chip {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .meta-chip span { color: var(--text); font-weight: 500; }
+
+    .step-note {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(99,102,241,.08);
+      border-left: 2px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Error Banner ── */
+    .error-banner {
+      padding: 12px 16px;
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 8px;
+      color: var(--error);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Auto refresh indicator ── */
+    .refresh-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(34,197,94,.1);
+      border: 1px solid rgba(34,197,94,.2);
+      color: var(--confirmed);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: .5; }
+    }
+    .refresh-badge.paused {
+      background: rgba(100,116,139,.1);
+      border-color: rgba(100,116,139,.2);
+      color: var(--text-muted);
+      animation: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <div>
+      <h1>Skill Tracker</h1>
+      <p>WorkBuddy 步骤可视化流程图</p>
+    </div>
+  </div>
+  <div class="controls">
+    <span id="refreshBadge" class="refresh-badge">● 自动刷新</span>
+    <button class="btn" id="toggleAutoRefresh">暂停自动刷新</button>
+    <button class="btn btn-primary" id="refreshBtn">⟳ 立即刷新</button>
+  </div>
+</header>
+
+<!-- File path row -->
+<div class="path-row">
+  <label>steps.json 路径：</label>
+  <input type="text" class="path-input" id="filePath"
+    placeholder="选择或输入 steps.json 文件路径…" />
+  <button class="btn btn-primary" id="loadBtn">加载</button>
+</div>
+
+<!-- Stats -->
+<div class="stats" id="stats" style="display:none">
+  <div class="stat total"><span class="num" id="statTotal">0</span><span class="label">总步骤</span></div>
+  <div class="stat exp">  <span class="num" id="statExp">0</span>  <span class="label">🟡 探索中</span></div>
+  <div class="stat conf"> <span class="num" id="statConf">0</span> <span class="label">🟢 已确认</span></div>
+  <div class="stat err">  <span class="num" id="statErr">0</span>  <span class="label">🔴 出错</span></div>
+</div>
+
+<div id="errorBanner" class="error-banner" style="display:none"></div>
+
+<!-- Flow -->
+<div class="flow" id="flow">
+  <div class="empty">
+    <div class="icon">📋</div>
+    <p>暂无步骤数据。<br/>
+       请先在路径框输入 <code>steps.json</code> 的路径并点击「加载」，<br/>
+       或等待 skill-tracker 激活后刷新本页面。</p>
+  </div>
+</div>
+
+<script>
+// ── 默认路径（与 SKILL.md 约定一致）
+const DEFAULT_PATH = 'runtime/steps.json'; // 相对路径，跨平台通用（由 serve.py 提供服务）
+
+const fileInput      = document.getElementById('filePath');
+const loadBtn        = document.getElementById('loadBtn');
+const refreshBtn     = document.getElementById('refreshBtn');
+const toggleBtn      = document.getElementById('toggleAutoRefresh');
+const refreshBadge   = document.getElementById('refreshBadge');
+const flowEl         = document.getElementById('flow');
+const statsEl        = document.getElementById('stats');
+const errorBannerEl  = document.getElementById('errorBanner');
+
+let autoRefresh = true;
+let autoTimer   = null;
+let currentPath = '';
+
+// ── 初始化
+fileInput.value = DEFAULT_PATH;
+currentPath = DEFAULT_PATH;
+loadData();
+
+// ── 自动刷新
+function startAutoRefresh() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(loadData, 3000);
+}
+startAutoRefresh();
+
+toggleBtn.addEventListener('click', () => {
+  autoRefresh = !autoRefresh;
+  if (autoRefresh) {
+    startAutoRefresh();
+    refreshBadge.textContent = '● 自动刷新';
+    refreshBadge.className = 'refresh-badge';
+    toggleBtn.textContent = '暂停自动刷新';
+  } else {
+    clearInterval(autoTimer);
+    refreshBadge.textContent = '⏸ 已暂停';
+    refreshBadge.className = 'refresh-badge paused';
+    toggleBtn.textContent = '启动自动刷新';
+  }
+});
+
+refreshBtn.addEventListener('click', loadData);
+loadBtn.addEventListener('click', () => {
+  currentPath = fileInput.value.trim();
+  loadData();
+});
+
+// ── 读取 & 渲染
+function loadData() {
+  if (!currentPath) return;
+
+  fetch(currentPath + '?t=' + Date.now())
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(render)
+    .catch(err => {
+      showError('无法读取文件：' + err.message +
+        '<br/><small>请确认已运行 serve.py，并通过 http://localhost:7788 访问本页面。</small>');
+    });
+}
+
+function showError(msg) {
+  errorBannerEl.innerHTML = msg;
+  errorBannerEl.style.display = 'block';
+}
+
+function hideError() {
+  errorBannerEl.style.display = 'none';
+}
+
+function render(steps) {
+  hideError();
+
+  if (!Array.isArray(steps)) {
+    showError('steps.json 格式错误：应为 JSON 数组。');
+    return;
+  }
+
+  // Stats
+  const total = steps.length;
+  const exp   = steps.filter(s => s.status === 'exploring').length;
+  const conf  = steps.filter(s => s.status === 'confirmed').length;
+  const err   = steps.filter(s => s.status === 'error').length;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statExp').textContent   = exp;
+  document.getElementById('statConf').textContent  = conf;
+  document.getElementById('statErr').textContent   = err;
+  statsEl.style.display = total ? 'flex' : 'none';
+
+  if (total === 0) {
+    flowEl.innerHTML = `<div class="empty"><div class="icon">⏳</div>
+      <p>steps.json 已加载，暂无步骤记录。<br/>等待 AI 开始追踪……</p></div>`;
+    return;
+  }
+
+  // Build flow
+  const html = steps.map((s, i) => {
+    const statusClass = s.status || 'exploring';
+    const statusLabel = { exploring: '🟡 探索中', confirmed: '🟢 已确认', error: '🔴 出错' }[statusClass] || statusClass;
+    const statusChipClass = `status-${statusClass}`;
+
+    const chips = [];
+    if (s.impl_type) chips.push(`<span class="meta-chip">实现方式 <span>${s.impl_type}</span></span>`);
+    if (s.method)    chips.push(`<span class="meta-chip">方法 <span>${esc(s.method)}</span></span>`);
+    if (s.selector)  chips.push(`<span class="meta-chip">${s.selector_type || 'selector'} <span>${esc(s.selector)}</span></span>`);
+
+    const note = s.note ? `<div class="step-note">📝 ${esc(s.note)}</div>` : '';
+
+    const connector = i < steps.length - 1
+      ? '<div class="connector"></div>' : '';
+
+    return `
+      <div class="step-wrap">
+        <div class="step-card ${statusClass}">
+          <div class="step-header">
+            <div class="step-num">${s.step ?? i + 1}</div>
+            <div class="step-desc">${esc(s.description || '（无描述）')}</div>
+            <span class="step-status ${statusChipClass}">${statusLabel}</span>
+          </div>
+          ${chips.length ? `<div class="step-meta">${chips.join('')}</div>` : ''}
+          ${note}
+        </div>
+        ${connector}
+      </div>`;
+  }).join('');
+
+  flowEl.innerHTML = html;
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
